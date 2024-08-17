@@ -1,0 +1,57 @@
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
+from lexicon import lexicon_ru
+
+def create_inline_keyboards():
+    stat_but = InlineKeyboardButton(
+        text=lexicon_ru.LEXICON_RU['/stat'],
+        callback_data='/stat'
+    )
+
+    more_message_but = InlineKeyboardButton(
+        text=lexicon_ru.LEXICON_RU['/more message'],
+        callback_data='/more message'
+    )
+
+    change_link_but = InlineKeyboardButton(
+        text=lexicon_ru.LEXICON_RU['/change link'],
+        callback_data='/change link'
+    )
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[[stat_but],
+                         [more_message_but],
+                         [change_link_but]]
+   )
+
+    return keyboard
+    
+
+def create_inline_cancel():
+    cancel_but = InlineKeyboardButton(
+        text = lexicon_ru.LEXICON_RU['cancel_but'],
+        callback_data='/start'
+    )
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[[cancel_but]]
+    )
+    
+    return keyboard
+
+def create_options_message(message):
+    answer_but = InlineKeyboardButton(
+        text = lexicon_ru.LEXICON_RU['answer'],
+        callback_data=f'{message}'
+    )
+
+    get_name_but = InlineKeyboardButton(
+        text = lexicon_ru.LEXICON_RU['get_name'],
+        callback_data='get_name'
+    )
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[[answer_but],
+                         [get_name_but]]
+    )
+
+    return keyboar
