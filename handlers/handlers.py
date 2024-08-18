@@ -36,9 +36,9 @@ def check_dict(payload):                    # фун-я поиска id поль
         if v['payload'] == payload:
             return k
 
-def get_payload(user):
-    payload = user_dict[user]['payload']
-    if payload == '': return user
+def get_payload(user):                      # фун-я проверки существующего ника 
+    payload = user_dict[user]['payload']    # конкретного пользователя,
+    if payload == '': return user           # в словаре пользователей
     else: return payload
 
 @router.message(CommandStart(deep_link=True))    # переход по чьей-то ссылке
