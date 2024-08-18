@@ -37,7 +37,7 @@ def check_dict(payload):                    # фун-я поиска id поль
             return k
 
 def get_payload(user):                      # фун-я проверки существующего ника 
-    payload = user_dict[user]['payload']    # конкретного пользователя,
+    payload = user_dict[str(user)]['payload']    # конкретного пользователя,
     if payload == '': return user           # в словаре пользователей
     else: return payload
 
@@ -47,7 +47,7 @@ async def process_deep_command(message: Message, bot: Bot, state: FSMContext):
     recipient = check_dict(args[1]) # из аргументов(из deep_link) берем id получателя
     sender = str(message.from_user.id) # id отправителя
     if str(recipient) == sender:        # если пытаешся отправить сообщение себе
-        deep_link = await create_start_link(bot,payload=get_payload(sender) # созд ссыль
+        deep_link = await create_start_link(bot,payload=get_payload(sender)) # созд ссыль
         await message.answer(  # выдаем сообщение и ссыль
                 text = f'{lexicon_ru.LEXICON_RU["/cancel_but_text"]} {str(deep_link)}'
         )
@@ -68,7 +68,7 @@ async def process_get_link(message: Message, bot: Bot, state: FSMContext):
     payload = message.text       # считываем ник 
     if check_dict(payload):      # проверяем не занято ли
         await bot.send_message(  # сообщаем что ник занят
-            user
+            user,
             text = lexicon_ru.LEXICON_RU['get_link_true']
         )
         await state.set_state(FSM.fill_link) # установим состояние смены ссылки
@@ -100,9 +100,9 @@ async def process_recipient(message: Message, bot: Bot, state: FSMContext):
         message.answer(   # сообщаем что отправили
             text = f'{lexicon_ru.LEXICON_RU["answer_send"]}'
         )
-        deep_link = await create_start_link(bot=bot, payload=get_payload(sender) # создаем ссыль
+        deep_link=await create_start_link(bot=bot,payload=get_payload(sender))#созд ссыль
         await bot.send_message(  # выводим стартовое сообщение
-            user,
+            sender,
             text=lexicon_ru.LEXICON_RU['/start']+
                   str(deep_link) +"\n\n"+
                   lexicon_ru.LEXICON_RU['/start 1'],
@@ -122,8 +122,8 @@ async def process_recipient(message: Message, bot: Bot, state: FSMContext):
                 text = f'👆 {message.from_user.first_name} --> <a href="tg://user?id={message.from_user.id}">@{message.from_user.username}</a>',
                 parse_mode='HTML'
             )
-    user_dict[recipient]['count_in']+=1        # итерируем счетчики сообщений 
-    user_dict[sender]["count_out"]+=1          # для статистики
+    user_dict[str(recipient)]['count_in']+=1        # итерируем счетчики сообщений 
+    user_dict[str(sender)]["count_out"]+=1          # для статистики
     with open('user_dict.json', 'w') as f:   # сохраняем словарь в файл
         json.dump(user_dict, f, indent=4, ensure_ascii=False) 
     await state.clear()            # очищаем состояние
@@ -160,6 +160,7 @@ async def process_start_command(call: CallbackQuery, bot: Bot, state: FSMContext
               lexicon_ru.LEXICON_RU['/start 1'],
         reply_markup=create_inline_keyboards()
     )
+    print(f' <<<--- user_duct --->>>   <<<---{user_dict}--->>>')
 
 
 @router.callback_query(F.data=='/stat') # нажатие на кнопку статистика
@@ -205,7 +206,7 @@ async def process_more_message(call: CallbackQuery, bot: Bot):
 @router.callback_query(F.data=='/change_link') # нажатие кнопки смены ссылки (ник)
 async def process_change_link(call: CallbackQuery, bot: Bot, state: FSMContext):
     recipient = call.from_user.id   # id пользователя
-    deep_link = create_start_link(bot=bot, payload=get_payload(recipient)
+    deep_link = create_start_link(bot=bot, payload=get_payload(recipient))
     await call.answer() # "отключение" анимации ожидания на кнопке
     await bot.send_message( # предлагаем сменить ссылку и выводим кнопки
         recipient,
