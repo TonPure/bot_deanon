@@ -35,6 +35,7 @@ def check_dict(payload):                    # фун-я поиска id поль
     for k,v in user_dict.items():           # в словаре
         if v['payload'] == payload:
             return k
+    return payload
 
 def get_payload(user):                      # фун-я проверки существующего ника 
     payload = user_dict[str(user)]['payload']    # конкретного пользователя,
@@ -46,7 +47,11 @@ def if_user(user):
         user_dict[user] = {"payload":"",
                            "count_in":0,
                            "count_out":0}
+   
+    with open('user_dict.json', 'w') as f:   # сохраняем словарь в файл
+        json.dump(user_dict, f, indent=4, ensure_ascii=False) 
     return user
+
 
 @router.message(CommandStart(deep_link=True))    # переход по чьей-то ссылке
 async def process_deep_command(message: Message, bot: Bot, state: FSMContext):
@@ -74,7 +79,7 @@ async def process_deep_command(message: Message, bot: Bot, state: FSMContext):
 async def process_get_link(message: Message, bot: Bot, state: FSMContext):
     user = message.from_user.id   # считаем id пользователя
     payload = message.text       # считываем ник 
-    if check_dict(payload):      # проверяем не занято ли
+    if payload!=check_dict(payload):      # проверяем не занято ли
         await bot.send_message(  # сообщаем что ник занят
             user,
             text = lexicon_ru.LEXICON_RU['get_link_true']
@@ -106,7 +111,6 @@ async def process_recipient(message: Message, bot: Bot, state: FSMContext):
     recipient, sender = data['recipient'], data['sender']
 
     if message.text=="/start": 
-        print(f'----message.text----{message.text}')
         deep_link = await create_start_link(bot=bot, payload=get_payload(sender))
         message.edit_text(
         text=lexicon_ru.LEXICON_RU['/start']+
@@ -122,7 +126,6 @@ async def process_recipient(message: Message, bot: Bot, state: FSMContext):
     )                                               # и платной опции
 
     if 'answer' in data:  # если это ответ на сообщение 
-        print(f" -------- data -------- {data}")
         await bot.send_message(   # сообщаем что отправили
             sender,
             text = f'{lexicon_ru.LEXICON_RU["answer_send"]}'
@@ -196,12 +199,10 @@ async def process_stat(call: CallbackQuery, bot: Bot, state: FSMContext):
     for x in user_dict:  # считаем сколько пользователей с меньшим кол-вом сообщений
         if user_dict[x]["count_out"] < output_msg: c_worse_out+=1
         if user_dict[x]["count_in"] < input_msg: c_worse_in+=1
-    print(f'c_worse_out   {c_worse_out}')
-    print(f'c_worse_in    {c_worse_in}')
-    persent_out = c_worse_out/(len(user_dict)-1)*100 #считаем в процентах насколько круче
-    persent_in = c_worse_in/(len(user_dict)-1)*100
-    print(f'persent_out  {persent_out}')
-    print(f'persent_in   {persent_in}')
+    try:
+        persent_out = c_worse_out/(len(user_dict)-1)*100 #считаем в процентах насколько круче
+        persent_in = c_worse_in/(len(user_dict)-1)*100
+    except Exception as e: print(f'----------{e}-----------')
     try:
         if persent_out==0 and persent_in==0:
             ave_prs = 0
@@ -209,9 +210,7 @@ async def process_stat(call: CallbackQuery, bot: Bot, state: FSMContext):
             ave_prs = int((persent_out+persent_in)/2)
         persent=(len(user_dict)-1)-ave_prs
 
-        print(f'persent   {persent}')
     except Exception as e: print(f'-------{e}-------')
-    print(f'input_smg {input_msg} output_msg {output_msg} persent {persent} ave_prs {ave_prs}')
     await call.message.answer(  # сообщение со статистикой
         text=f'{lexicon_ru.LEXICON_RU["/stat"]}'.format(input_msg,output_msg,ave_prs,int(ave_prs/10), deep_link,),
         reply_markup=create_inline_back() # кнопка назад
