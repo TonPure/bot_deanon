@@ -46,13 +46,14 @@ def if_user(user):
         user_dict[user] = {"payload":"",
                            "count_in":0,
                            "count_out":0}
+    return user
 
 @router.message(CommandStart(deep_link=True))    # переход по чьей-то ссылке
 async def process_deep_command(message: Message, bot: Bot, state: FSMContext):
     args = message.text.split()
     recipient = check_dict(args[1]) # из аргументов(из deep_link) берем id получателя
     sender = str(message.from_user.id) # id отправителя
-    deep_link = if_user(sender)
+    sender=if_user(sender)                   # если пользак не в словаре - добавим
     if str(recipient) == sender:        # если пытаешся отправить сообщение себе
         deep_link = await create_start_link(bot,payload=get_payload(sender)) # созд ссыль
         await message.answer(  # выдаем сообщение и ссыль
@@ -113,7 +114,7 @@ async def process_recipient(message: Message, bot: Bot, state: FSMContext):
               lexicon_ru.LEXICON_RU['/start 1'],
         )
 
-    await bot.send_message( # отправляем сообщение
+    await bot.send_message(                        # отправляем сообщение
         recipient,
         text = f'{lexicon_ru.LEXICON_RU["get_message"]}\n\n'
                f'{message.text}\n',
@@ -171,7 +172,7 @@ async def process_start_callback(call: CallbackQuery, bot: Bot, state: FSMContex
 @router.message(CommandStart()) # старт бота из меню
 async def process_start_command(call: CallbackQuery, bot: Bot, state: FSMContext):
     user = str(call.from_user.id) # id пользователя
-    deep_link = if_user(user)   # если пользователь в словаре
+    deep_link = await create_start_link(bot=bot, payload=get_payload(if_user(user)))   # если пользователь в словаре
 
     await bot.send_message(  # отправляем стартовое сообщение
         user,
@@ -180,7 +181,6 @@ async def process_start_command(call: CallbackQuery, bot: Bot, state: FSMContext
               lexicon_ru.LEXICON_RU['/start 1'],
         reply_markup=create_inline_keyboards()
     )
-    print(f' <<<--- user_duct --->>>   <<<---{user_dict}--->>>')
 
 
 @router.callback_query(F.data=='/stat') # нажатие на кнопку статистика
@@ -194,19 +194,26 @@ async def process_stat(call: CallbackQuery, bot: Bot, state: FSMContext):
     deep_link = await create_start_link(bot=bot, payload=get_payload(user))
 
     for x in user_dict:  # считаем сколько пользователей с меньшим кол-вом сообщений
-        if user_dict[x]["count_out"] < output_msg: 
-            c_worse_out+=1
-            print(f' y["count_out"] --> {y["count_out"]}')
-
+        if user_dict[x]["count_out"] < output_msg: c_worse_out+=1
         if user_dict[x]["count_in"] < input_msg: c_worse_in+=1
-    
-    persent_out = c_worse_out/len(user_dict)*100 # считаем в процентах насколько круче
-    persent_in = c_worse_in/len(user_dict)*100
+    print(f'c_worse_out   {c_worse_out}')
+    print(f'c_worse_in    {c_worse_in}')
+    persent_out = c_worse_out/(len(user_dict)-1)*100 #считаем в процентах насколько круче
+    persent_in = c_worse_in/(len(user_dict)-1)*100
+    print(f'persent_out  {persent_out}')
+    print(f'persent_in   {persent_in}')
     try:
-        persent = 2/(persent_out+persent_in)
+        if persent_out==0 and persent_in==0:
+            ave_prs = 0
+        else: 
+            ave_prs = int((persent_out+persent_in)/2)
+        persent=(len(user_dict)-1)-ave_prs
+
+        print(f'persent   {persent}')
     except Exception as e: print(f'-------{e}-------')
+    print(f'input_smg {input_msg} output_msg {output_msg} persent {persent} ave_prs {ave_prs}')
     await call.message.answer(  # сообщение со статистикой
-        text=f'{lexicon_ru.LEXICON_RU["/stat"]}'.format(input_msg, output_msg,0,0, deep_link,),
+        text=f'{lexicon_ru.LEXICON_RU["/stat"]}'.format(input_msg,output_msg,ave_prs,int(ave_prs/10), deep_link,),
         reply_markup=create_inline_back() # кнопка назад
     )
 
