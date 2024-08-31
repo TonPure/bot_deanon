@@ -1,3 +1,4 @@
+import html
 import json
 
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -120,7 +121,7 @@ async def process_recipient(message: Message, bot: Bot, state: FSMContext):
 
     await bot.send_message(                        # отправляем сообщение
         recipient,
-        text = f'{lexicon_ru.LEXICON_RU["get_message"]}\n\n'
+        text = f'{lexicon_ru.LEXICON_RU["get_message"]}'
                f'{message.text}\n',
         reply_markup=create_options_message(sender) # прикрепляем кнопки для ответа
     )                                               # и платной опции
@@ -146,11 +147,39 @@ async def process_recipient(message: Message, bot: Bot, state: FSMContext):
     )
 
     if int(recipient) in config.tg_bot.admin_ids:  # если получатель в списке 
-        await bot.send_message(                    # админов - отправляем ник 
-            recipient,                             # отправителя
-            text = f'👆 {message.from_user.first_name} --> <a href="tg://user?id={message.from_user.id}">@{message.from_user.username}</a>',
-            parse_mode='HTML'
-        )
+        try:
+
+            await bot.send_message(
+                recipient,
+                text=f' 👆name --> {message.from_user.first_name}',
+                parse_mode='HTML'
+                )
+            await bot.send_message(
+                recipient,
+                text = f'  👆-->  <a href="tg://user?id={message.from_user.id}">@{message.from_user.username}</a>',
+                parse_mode='HTML'
+             )
+            await bot.send_message(                    # админов - отправляем ник 
+                recipient,                             # отправителя
+                text = f'👆id --> {message.from_user.id}', 
+                parse_mode='HTML'
+            )
+        except Exception as ex:   # юзернэйм содержит какието html символы
+            print(f' =================== {ex} ================')
+            escape_name = html.escape(message.from_user.first_name)
+            
+            await bot.send_message(
+                recipient,
+                text = f'  👆-->  <a href="tg://user?id={message.from_user.id}">@{message.from_user.username}</a>',
+             )
+            await bot.send_message(                    # админов - отправляем ник 
+                recipient,                             # отправителя
+                text = f'👆id = {message.from_user.id}', 
+            )
+            await bot.send_message(
+                recipient,
+                text = f' 👆name = {escape_name}',
+                )
     user_dict[str(recipient)]['count_in']+=1        # итерируем счетчики сообщений 
     user_dict[str(sender)]["count_out"]+=1          # для статистики
     with open('user_dict.json', 'w') as f:   # сохраняем словарь в файл
